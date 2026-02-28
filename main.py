@@ -10,10 +10,10 @@ from sqlite_vec import serialize_float32
 from fastmcp import FastMCP
 
 # Config
-EMBED_URL = "http://toybox:9090/v1/embeddings"
+EMBED_URL = "http://localhost:9090/v1/embeddings"
 EMBED_MODEL = "snowflake-arctic-embed-l-v2.0-q4_k_m.gguf"
 EMBED_DIMS = 1024
-DB_PATH = Path("/home/mlf/memory/engram.db")
+DB_PATH = Path("./engram.db")
 
 mcp = FastMCP(
     name="engram",
