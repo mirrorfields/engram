@@ -8,14 +8,15 @@ Built with [sqlite-vec](https://github.com/asg017/sqlite-vec) for vector storage
 
 ## How it works
 
-Memories are stored in SQLite alongside their vector embeddings. Search uses cosine similarity — so `query("things about authentication")` will surface a memory that says "JWT tokens expire after 24 hours" even if the word "authentication" never appears in it.
+Memories are stored in SQLite alongside their vector embeddings and a full-text search index. Search combines cosine similarity (via sqlite-vec) with keyword matching (via FTS5), merged using reciprocal rank fusion — so you get the best of both: semantic understanding and exact-term recall.
 
-Collections are just string namespaces. Create as many as you want; they're created automatically on first write.
+Collections are just string namespaces. Create as many as you want; they're created automatically on first write. Existing memories are migrated into the FTS index automatically on first run.
 
 ## Tools
 
 - **`save_memory(collection, text)`** — embed and store a memory
-- **`search_memory(collection, query, top_k=5)`** — retrieve by semantic similarity
+- **`search_memory(collection, query, top_k=5)`** — hybrid retrieval: vector + keyword search via reciprocal rank fusion
+- **`randomly_remember(collection, age="any")`** — surface a random memory; `age="recent"` draws from the 20 newest, `age="old"` from the 20 oldest, `age="any"` fully random
 - **`list_collections()`** — see all collections with counts and last-updated timestamps
 
 ## Setup
@@ -33,11 +34,10 @@ uv sync
 
 **Configure** — edit the constants at the top of `main.py`:
 ```python
-EMBED_URL   = "http://localhost:9090/v1/embeddings"    # your embeddings server
+EMBED_URL   = "http://localhost:9090/v1/embeddings"   # your embeddings server
 EMBED_MODEL = "your-model-name"                        # model name as reported by /v1/models
 EMBED_DIMS  = 1024                                     # must match your model's output dimensions
 DB_PATH     = Path("./engram.db")                      # where to store the database
-MCP_PORT    = 9005                                     # port for the MCP server to listen on
 ```
 
 **Run:**
@@ -47,16 +47,16 @@ uv run main.py
 
 Server starts on `http://0.0.0.0:9005`. Add it to your MCP client config as an HTTP server.
 
-### Known issue: sqlite-vec on aarch64
+### sqlite-vec on aarch64
 
-The PyPI wheel for sqlite-vec is currently aarch32 on aarch64 systems (known upstream bug). If you're on a Raspberry Pi or similar, compile from source (assuming you are using `apt` for package management):
+The PyPI wheel for sqlite-vec is currently aarch32 on aarch64 systems (known upstream bug). If you're on a Raspberry Pi or similar, compile from source:
 
 ```bash
 sudo apt install libsqlite3-dev
 git clone https://github.com/asg017/sqlite-vec
 cd sqlite-vec
 make all
-# copy the resulting dist/vec0.so into your venv's site-packages/sqlite_vec/
+# copy the resulting vec0.so into your venv's site-packages
 ```
 
 ## Embedding model
